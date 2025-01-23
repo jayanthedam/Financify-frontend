@@ -110,7 +110,7 @@ const AssetForm = () => {
     setError('');
 
     try {
-      const response = await fetch(import.meta.VITE_API_BASE_URL+'/assets', {
+      const response = await fetch(import.meta.env.VITE_API_BASE_URL+'/assets', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

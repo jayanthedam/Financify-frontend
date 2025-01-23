@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const response = await fetch(import.meta.VITE_API_BASE_URL+'/users/login', {
+    const response = await fetch(import.meta.env.VITE_API_BASE_URL+'/users/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -39,10 +39,10 @@ export const AuthProvider = ({ children }) => {
 
     localStorage.setItem('user', JSON.stringify(data));
     setUser(data);
-  };
+  };  
 
-  const register = async (name, email, password) => {
-    const response = await fetch(import.meta.VITE_API_BASE_URL+'/users/register', {
+  const register = async (name,  email, password) => {
+    const response = await fetch(import.meta.env.VITE_API_BASE_URL+'/users/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

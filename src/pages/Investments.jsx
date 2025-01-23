@@ -21,7 +21,7 @@ const Investments = () => {
     useEffect(() => {
         const fetchAssets = async () => {
             try {
-                const response = await fetch(`${import.meta.VITE_API_BASE_URL}/assets`, {
+                const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/assets`, {
                     headers: {
                         Authorization: `Bearer ${user.token}`,
                     },
@@ -67,7 +67,7 @@ const Investments = () => {
 
     const handleDelete = async (assetId) => {
         try {
-            const response = await fetch(`${import.meta.VITE_API_BASE_URL}/assets/${assetId}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/assets/${assetId}`, {
                 method: 'DELETE',
                 headers: {
                     Authorization: `Bearer ${user.token}`,
@@ -86,7 +86,7 @@ const Investments = () => {
 
     const handleSave = async (updatedAsset) => {
         try {
-            const response = await fetch(`${import.meta.VITE_API_BASE_URL}/assets/${updatedAsset._id}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/assets/${updatedAsset._id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
