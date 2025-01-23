@@ -37,7 +37,7 @@ const Dashboard = () => {
 
     const fetchStockPrices = async () => {
       try {
-        const response = await fetch(import.meta.env.VITE_API_BASE_URL+'/assets/stock-prices', {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/assets/stock-prices`, {
           headers: {
             Authorization: `Bearer ${user.token}`,
           },
@@ -73,7 +73,7 @@ const Dashboard = () => {
 
     const fetchHistoricalStockPrices = async () => {
       try {
-        const response = await fetch(import.meta.env.VITE_API_BASE_URL+'/assets/historical-stock-prices', {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/assets/historical-stock-prices`, {
           headers: {
             Authorization: `Bearer ${user.token}`,
           },
@@ -87,7 +87,7 @@ const Dashboard = () => {
 
     const fetchGoldPrice = async () => {
       try {
-        const response = await fetch(import.meta.env.VITE_API_BASE_URL+'/gold-price');
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/gold-price`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }

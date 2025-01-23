@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 
 const AuthContext = createContext(null);
 
@@ -23,41 +23,51 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const response = await fetch(import.meta.env.VITE_API_BASE_URL+'/users/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.message);
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to login');
+      }
+
+      localStorage.setItem('user', JSON.stringify(data));
+      setUser(data);
+    } catch (error) {
+      console.error('Login error:', error.message);
+      throw error;
     }
+  };
 
-    localStorage.setItem('user', JSON.stringify(data));
-    setUser(data);
-  };  
+  const register = async (name, email, password) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password }),
+      });
 
-  const register = async (name,  email, password) => {
-    const response = await fetch(import.meta.env.VITE_API_BASE_URL+'/users/register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ name, email, password }),
-    });
+      const data = await response.json();
 
-    const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to register');
+      }
 
-    if (!response.ok) {
-      throw new Error(data.message);
+      localStorage.setItem('user', JSON.stringify(data));
+      setUser(data);
+    } catch (error) {
+      console.error('Registration error:', error.message);
+      throw error;
     }
-
-    localStorage.setItem('user', JSON.stringify(data));
-    setUser(data);
   };
 
   const logout = () => {
@@ -66,7 +76,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
