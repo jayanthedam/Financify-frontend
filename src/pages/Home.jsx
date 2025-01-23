@@ -15,14 +15,14 @@ const Home = () => {
 
   return (
     <div className="max-w-lg mx-auto bg-white p-8 rounded-lg shadow-md">
-      <h1 className="text-2xl font-bold mb-4">Welcome to Your Dashboard</h1>
+      <h1 className="text-2xl font-bold mb-4">Welcome to Your Home Page</h1>
       <div className="space-y-4">
-        {/* <p className="text-gray-600">
+        <p className="text-gray-600">
           You're logged in as <span className="font-semibold">{user.name}</span>
         </p>
         <p className="text-gray-600">
           Email: <span className="font-semibold">{user.email}</span>
-        </p> */}
+        </p>
       </div>
     </div>
   );

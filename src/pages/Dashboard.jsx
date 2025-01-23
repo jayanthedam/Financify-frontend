@@ -1,9 +1,109 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ReactApexChart from 'react-apexcharts';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const [assets, setAssets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [totalStockValue, setTotalStockValue] = useState(0);
+  const [totalCryptoValue, setTotalCryptoValue] = useState(0);
+  const [goldPrice, setGoldPrice] = useState(0);
+  const [historicalStockPrices, setHistoricalStockPrices] = useState({});
+
+  useEffect(() => {
+    const fetchAssets = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.RENDER_URL}/api/assets`, {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to fetch assets');
+        }
+        setAssets(data);
+        fetchStockPrices();
+        fetchCryptoPrices(data);
+        fetchHistoricalStockPrices();
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const fetchStockPrices = async () => {
+      try {
+        const response = await fetch(import.meta.env.RENDER_URL+'/assets/stock-prices', {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        });
+        const data = await response.json();
+        setTotalStockValue(data.totalStockValue);
+      } catch (error) {
+        console.error('Error fetching stock prices:', error);
+      }
+    };
+
+    const fetchCryptoPrices = async (assets) => {
+      try {
+        const cryptoAssets = assets.filter(asset => asset.assetType === 'crypto');
+        let totalValue = 0;
+
+        for (const asset of cryptoAssets) {
+          if (!asset.details) continue;
+          const response = await fetch(`${import.meta.env.RENDER_URL}/api/assets/crypto-prices`, {
+            headers: {
+              Authorization: `Bearer ${user.token}`,
+            },
+          });
+          const data = await response.json();
+          totalValue += data.totalCryptoValue;
+        }
+
+        setTotalCryptoValue(totalValue);
+      } catch (error) {
+        console.error('Error fetching crypto prices:', error);
+      }
+    };
+
+    const fetchHistoricalStockPrices = async () => {
+      try {
+        const response = await fetch(import.meta.env.RENDER_URL+'/api/assets/historical-stock-prices', {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        });
+        const data = await response.json();
+        setHistoricalStockPrices(data);
+      } catch (error) {
+        console.error('Error fetching historical stock prices:', error);
+      }
+    };
+
+    const fetchGoldPrice = async () => {
+      try {
+        const response = await fetch(import.meta.env.RENDER_URL+'/api/gold-price');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        if (!data) {
+          throw new Error('No data received');
+        }
+        setGoldPrice(data.price_gram_24k);
+      } catch (error) {
+        console.error('Error fetching gold price:', error);
+      }
+    };
+
+    fetchAssets();
+    fetchGoldPrice();
+  }, [user.token]);
 
   if (!user) {
     return (
@@ -13,232 +113,151 @@ const Dashboard = () => {
       </div>
     );
   }
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="text-red-600">{error}</div>;
+  }
+
+  const assetTypes = ['gold', 'stocks', 'crypto', 'realestate', 'fd'];
+  const assetLabels = {
+    gold: 'Gold',
+    stocks: 'Stocks',
+    crypto: 'Cryptocurrency',
+    realestate: 'Real Estate',
+    fd: 'Fixed Deposits',
+  };
+
+  const assetAllocation = assetTypes.map((type) => {
+    if (type === 'stocks') {
+      return { type, total: totalStockValue };
+    }
+    if (type === 'crypto') {
+      return { type, total: totalCryptoValue };
+    }
+    if (type === 'gold') {
+      const goldAssets = assets.filter(asset => asset.assetType === 'gold');
+      const totalGoldGrams = goldAssets.reduce((sum, asset) => sum + asset.details.quantity, 0);
+      return { type, total: totalGoldGrams * goldPrice };
+    }
+    
+    const total = assets
+      .filter((asset) => asset.assetType === type)
+      .reduce(
+        (sum, asset) =>
+          sum +
+          (asset.details.quantity ||
+            asset.details.cryptoQuantity ||
+            asset.details.area ||
+            asset.details.principalAmount),
+        0,
+      );
+    return { type, total };
+  });
+
+  const totalAssets = assetAllocation.reduce((sum, asset) => sum + (asset.total || 0), 0);
+
   const assetAllocationOptions = {
-    labels: ['Stocks', 'Gold', 'Liquid Assets'],
-    colors: ['#36A2EB', '#FFCE56', '#FF6384'],
-    legend: { position: 'bottom' }
+    labels: assetAllocation.map((a) => assetLabels[a.type]),
+    colors: ['#36A2EB', '#FFCE56', '#FF6384', '#4BC0C0', '#9966FF'],
+    legend: { position: 'bottom' },
   };
-  const assetAllocationSeries = [10000, 30000, 10000];
+  const assetAllocationSeries = assetAllocation.map((a) => a.total);
 
-  // Data and config for the Line chart
-  const stockValueOptions = {
-    chart: { type: 'line' },
-    stroke: { curve: 'smooth' },
-    colors: ['#36A2EB'],
-    xaxis: { categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'] },
-  };
-  const stockValueSeries = [
-    {
-      name: 'Stock Value Over Time',
-      data: [8000, 9000, 12000, 15000, 13000, 14000],
-    },
-  ];
-
-  // Data and config for the Bar chart
-  const assetGrowthOptions = {
+  const barChartOptions = {
     chart: { type: 'bar' },
-    colors: ['#36A2EB', '#FFCE56', '#FF6384'],
-    xaxis: { categories: ['Stocks', 'Gold', 'Liquid Assets'] },
-  };
-  const assetGrowthSeries = [
-    {
-      name: 'Asset Growth Comparison',
-      data: [10000, 30000, 10000],
+    xaxis: { categories: assetAllocation.map((a) => assetLabels[a.type]) },
+    plotOptions: {
+      bar: {
+        horizontal: false,
+        columnWidth: '55%',
+        endingShape: 'rounded'
+      },
     },
-  ];
+    dataLabels: {
+      enabled: false
+    },
+    stroke: {
+      show: true,
+      width: 2,
+      colors: ['transparent']
+    },
+    fill: {
+      opacity: 1
+    },
+    tooltip: {
+      y: {
+        formatter: function (val) {
+          return "₹ " + val.toLocaleString();
+        }
+      }
+    }
+  };
 
-  // Data and config for the Radar chart
-  const riskProfileOptions = {
-    chart: { type: 'radar' },
-    colors: ['rgba(54, 162, 235, 0.5)'],
-    xaxis: { categories: ['Liquidity', 'Risk', 'Stability', 'Growth'] },
-  };
-  const riskProfileSeries = [
-    {
-      name: 'Risk Profile',
-      data: [3, 2, 4, 5],
-    },
-  ];
-
-  // Data and config for additional charts (Area and Scatter)
-  const areaChartOptions = {
-    chart: { type: 'area' },
-    xaxis: { categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'] },
-    colors: ['#FF6347'],
-  };
-  const areaChartSeries = [
-    {
-      name: 'Investment Over Time',
-      data: [5000, 7000, 8000, 10000, 12000, 15000],
-    },
-  ];
-
-  const scatterChartOptions = {
-    chart: { type: 'scatter' },
-    xaxis: { categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'] },
-    colors: ['#32CD32'],
-  };
-  const scatterChartSeries = [
-    {
-      name: 'Investment Volatility',
-      data: [3000, 5000, 7000, 8000, 10000, 13000],
-    },
-  ];
-
-  const bubbleChartOptions = {
-    chart: { type: 'bubble' },
-    xaxis: { categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'] },
-    colors: ['#FFD700'],
-  };
-  const bubbleChartSeries = [
-    {
-      name: 'Risk vs Return',
-      data: [
-        [1, 8000, 10],
-        [2, 10000, 15],
-        [3, 12000, 25],
-        [4, 15000, 35],
-        [5, 13000, 30],
-        [6, 14000, 40],
-      ],
-    },
-  ];
+  const barChartSeries = [{
+    name: 'Asset Value',
+    data: assetAllocation.map((a) => a.total)
+  }];
 
   return (
-    <div className="p-2 space-y-6">
-      {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-blue-500 text-white p-4 rounded-lg shadow-md flex flex-col items-center">
+    <div className="p-4 space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 justify-center items-center">
+        {/* Total Assets Card */}
+        <div className="bg-blue-500 text-white p-4 rounded-lg shadow-lg flex flex-col items-center">
           <h3 className="text-lg font-semibold">Total Assets</h3>
-          <p className="text-2xl mt-2">₹50,000</p>
+          <p className="text-2xl font-bold mt-2">₹ {Math.floor(totalAssets).toLocaleString()}.0</p>
         </div>
-        <div className="bg-green-500 text-white p-4 rounded-lg shadow-md flex flex-col items-center">
-          <h3 className="text-lg font-semibold">Stocks</h3>
-          <p className="text-2xl mt-2">₹10,000</p>
-        </div>
-        <div className="bg-yellow-500 text-white p-4 rounded-lg shadow-md flex flex-col items-center">
-          <h3 className="text-lg font-semibold">Gold</h3>
-          <p className="text-2xl mt-2">₹300,000</p>
-        </div>
-        <div className="bg-purple-500 text-white p-4 rounded-lg shadow-md flex flex-col items-center">
-          <h3 className="text-lg font-semibold">Liquid Assets</h3>
-          <p className="text-2xl mt-2">₹10,000</p>
-        </div>
-      </div> */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {[
-          { label: 'Total Assets', value: '₹50,000', bg: 'bg-blue-500' },
-          { label: 'Stocks', value: '₹10,000', bg: 'bg-green-500' },
-          { label: 'Gold', value: '₹30,000', bg: 'bg-yellow-500' },
-          { label: 'Liquid Assets', value: '₹10,000', bg: 'bg-purple-500' },
-        ].map((item, index) => (
-          <div
-            key={index}
-            className={`${item.bg} text-white p-6 rounded-xl shadow-lg hover:scale-105 transform transition-all`}
-          >
-            <h3 className="text-lg font-semibold">{item.label}</h3>
-            <p className="text-2xl font-bold mt-2">{item.value}</p>
+
+        {/* Dynamically Rendered Asset Allocation Cards */}
+        {assetAllocation.map((asset, index) => (
+          <div key={index} className="bg-white text-black p-4 rounded-lg shadow-lg flex flex-col items-center">
+            <h3 className="text-lg font-semibold">{assetLabels[asset.type]}</h3>
+            <p className="text-2xl font-bold mt-2">₹ {Math.floor(asset.total).toLocaleString()}</p>
           </div>
         ))}
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Doughnut Chart - Asset Allocation */}
-        <div className="bg-white p-2 rounded-lg shadow-md">
-          <h3 className="text-sm font-semibold mb-4">Asset Allocation</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold mb-4">Asset Allocation</h3>
           <ReactApexChart
             options={assetAllocationOptions}
             series={assetAllocationSeries}
             type="pie"
-            height={250}
+            height={350}
           />
         </div>
-
-        {/* Line Chart - Stock Value Over Time */}
-        <div className="bg-white p-2 rounded-lg shadow-md">
-          <h3 className="text-sm font-semibold mb-4">Stock Value Over Time</h3>
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold mb-4">Value of Each Asset</h3>
           <ReactApexChart
-            options={stockValueOptions}
-            series={stockValueSeries}
-            type="line"
-            height={250}
-          />
-        </div>
-
-        {/* Bar Chart - Asset Growth Comparison */}
-        <div className="bg-white p-2 rounded-lg shadow-md">
-          <h3 className="text-sm font-semibold mb-4">Asset Growth Comparison</h3>
-          <ReactApexChart
-            options={assetGrowthOptions}
-            series={assetGrowthSeries}
+            options={barChartOptions}
+            series={barChartSeries}
             type="bar"
-            height={250}
+            height={350}
           />
         </div>
-
-        {/* Radar Chart - Risk Profile */}
-        <div className="bg-white p-2 rounded-lg shadow-md">
-          <h3 className="text-sm font-semibold mb-4">Risk Profile</h3>
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold mb-4">Historical Stock Prices</h3>
           <ReactApexChart
-            options={riskProfileOptions}
-            series={riskProfileSeries}
-            type="radar"
-            height={250}
+            options={{
+              chart: { type: 'line' },
+              stroke: { curve: 'smooth' },
+              xaxis: { type: 'datetime' },
+            }}
+            series={Object.keys(historicalStockPrices).map(ticker => ({
+              name: ticker,
+              data: historicalStockPrices[ticker].map(entry => ({
+                x: new Date(entry.t),
+                y: entry.c,
+              })),
+            }))}
+            type="line"
+            height={350}
           />
         </div>
-
-        {/* Area Chart - Investment Over Time */}
-        <div className="bg-white p-2 rounded-lg shadow-md">
-          <h3 className="text-sm font-semibold mb-4">Investment Over Time</h3>
-          <ReactApexChart
-            options={areaChartOptions}
-            series={areaChartSeries}
-            type="area"
-            height={250}
-          />
-        </div>
-
-        {/* Scatter Chart - Investment Volatility */}
-        <div className="bg-white p-2 rounded-lg shadow-md">
-          <h3 className="text-sm font-semibold mb-4">Investment Volatility</h3>
-          <ReactApexChart
-            options={scatterChartOptions}
-            series={scatterChartSeries}
-            type="scatter"
-            height={250}
-          />
-        </div>
-      </div>
-
-      {/* Latest Investments Table */}
-      <div className="bg-white p-4 rounded-lg shadow-md mt-6">
-        <h3 className="text-sm font-semibold mb-4">Latest Investments</h3>
-        <table className="min-w-full table-auto">
-          <thead>
-            <tr>
-              <th className="px-4 py-2 text-left">Investment</th>
-              <th className="px-4 py-2 text-left">Amount</th>
-              <th className="px-4 py-2 text-left">Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td className="border px-4 py-2">Stocks</td>
-              <td className="border px-4 py-2">₹10,000</td>
-              <td className="border px-4 py-2">01/10/2024</td>
-            </tr>
-            <tr>
-              <td className="border px-4 py-2">Gold</td>
-              <td className="border px-4 py-2">₹30,000</td>
-              <td className="border px-4 py-2">01/10/2024</td>
-            </tr>
-            <tr>
-              <td className="border px-4 py-2">Liquid Assets</td>
-              <td className="border px-4 py-2">₹10,000</td>
-              <td className="border px-4 py-2">01/10/2024</td>
-            </tr>
-          </tbody>
-        </table>
       </div>
     </div>
   );
