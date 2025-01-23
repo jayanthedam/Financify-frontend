@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const response = await fetch(import.meta.env.RENDER_URL+'/api/users/login', {
+    const response = await fetch(import.meta.VITE_API_BASE_URL+'/users/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (name, email, password) => {
-    const response = await fetch(import.meta.env.RENDER_URL+'/api/users/register', {
+    const response = await fetch(import.meta.VITE_API_BASE_URL+'/users/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -21,7 +21,7 @@ const Investments = () => {
     useEffect(() => {
         const fetchAssets = async () => {
             try {
-                const response = await fetch(`${import.meta.env.RENDER_URL}/api/assets`, {
+                const response = await fetch(`${import.meta.VITE_API_BASE_URL}/assets`, {
                     headers: {
                         Authorization: `Bearer ${user.token}`,
                     },
@@ -49,7 +49,7 @@ const Investments = () => {
 
             for (const asset of stockAssets) {
                 if (!asset.details) continue;
-                const response = await fetch(`https://finnhub.io/api/v1/quote?symbol=${asset.details.ticker}&token=${import.meta.env.FINNHUB_API_KEY}`);
+                const response = await fetch(`https://finnhub.io/api/v1/quote?symbol=${asset.details.ticker}&token=${import.meta.env.VITE_FINNHUB_API_KEY}`);
                 const data = await response.json();
                 const closePrice = data.c; // Current price
                 totalValue += closePrice * asset.details.shares;
@@ -67,7 +67,7 @@ const Investments = () => {
 
     const handleDelete = async (assetId) => {
         try {
-            const response = await fetch(`${import.meta.env.RENDER_URL}/api/assets/${assetId}`, {
+            const response = await fetch(`${import.meta.VITE_API_BASE_URL}/assets/${assetId}`, {
                 method: 'DELETE',
                 headers: {
                     Authorization: `Bearer ${user.token}`,
@@ -86,7 +86,7 @@ const Investments = () => {
 
     const handleSave = async (updatedAsset) => {
         try {
-            const response = await fetch(`${import.meta.env.RENDER_URL}/api/assets/${updatedAsset._id}`, {
+            const response = await fetch(`${import.meta.VITE_API_BASE_URL}/assets/${updatedAsset._id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

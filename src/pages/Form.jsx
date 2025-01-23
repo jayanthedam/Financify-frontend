@@ -50,7 +50,7 @@ const AssetForm = () => {
 
   const fetchTickers = async (query) => {
     try {
-      const response = await fetch(`https://finnhub.io/api/v1/search?q=${query}&token=cu2j6i1r01qh0l7hcn00cu2j6i1r01qh0l7hcn0g`);
+      const response = await fetch(`https://finnhub.io/api/v1/search?q=${query}&token=${import.meta.env.VITE_FINNHUB_API_KEY}`);
       const data = await response.json();
       setTickers(data.result || []);
     } catch (error) {
@@ -110,7 +110,7 @@ const AssetForm = () => {
     setError('');
 
     try {
-      const response = await fetch(import.meta.env.RENDER_URL+'/api/assets', {
+      const response = await fetch(import.meta.VITE_API_BASE_URL+'/assets', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
