@@ -50,7 +50,9 @@ const AssetForm = () => {
 
   const fetchTickers = async (query) => {
     try {
-      const response = await fetch(`https://finnhub.io/api/v1/search?q=${query}&token=${import.meta.env.VITE_FINNHUB_API_KEY}`);
+      const response = await fetch(
+        `https://finnhub.io/api/v1/search?q=${query}&token=${import.meta.env.VITE_FINNHUB_API_KEY}`
+      );
       const data = await response.json();
       setTickers(data.result || []);
     } catch (error) {
@@ -58,7 +60,10 @@ const AssetForm = () => {
     }
   };
 
-  const debouncedFetchTickers = useCallback(debounce(fetchTickers, 300), []);
+  const debouncedFetchTickers = useCallback(
+    debounce(fetchTickers, 300),
+    []
+  );
 
   useEffect(() => {
     if (searchQuery) {
@@ -68,49 +73,12 @@ const AssetForm = () => {
     }
   }, [searchQuery, debouncedFetchTickers]);
 
-  const getInitialValues = () => {
-    switch (selectedAsset) {
-      case 'gold':
-        return {
-          quantity: '',
-          purchaseDate: '',
-          pricePerGram: ''
-        };
-      case 'stocks':
-        return {
-          ticker: '',
-          shares: '',
-          pricePerShare: ''
-        };
-      case 'crypto':
-        return {
-          cryptocurrency: '',
-          cryptoQuantity: '',
-          cryptoPrice: ''
-        };
-      case 'realestate':
-        return {
-          propertyType: '',
-          area: '',
-          purchasePrice: ''
-        };
-      case 'fd':
-        return {
-          principalAmount: '',
-          interestRate: '',
-          maturityPeriod: ''
-        };
-      default:
-        return {};
-    }
-  };
-
   const handleSubmit = async (values, { resetForm }) => {
     setLoading(true);
     setError('');
 
     try {
-      const response = await fetch(import.meta.env.VITE_API_BASE_URL+'/assets', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/assets`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -137,6 +105,44 @@ const AssetForm = () => {
     }
   };
 
+  const getInitialValues = () => {
+    switch (selectedAsset) {
+      case 'gold':
+        return {
+          quantity: '',
+          purchaseDate: '',
+          pricePerGram: ''
+        };
+      case 'stocks':
+        return {
+          ticker: '',
+          shares: '',
+          pricePerShare: ''
+        };
+      case 'crypto':
+        return {
+          cryptocurrency: '',
+          quantity: '',
+          purchasePrice: ''
+        };
+      case 'realestate':
+        return {
+          propertyType: '',
+          area: '',
+          purchasePrice: ''
+        };
+      case 'fd':
+        return {
+          principalAmount: '',
+          interestRate: '',
+          maturityPeriod: '',
+          purchasePrice: ''
+        };
+      default:
+        return {};
+    }
+  };
+
   const renderFields = () => {
     switch (selectedAsset) {
       case 'gold':
@@ -147,7 +153,7 @@ const AssetForm = () => {
               type="number"
               label="Quantity (grams)"
               component={CustomInput}
-              placeholder="Enter quantity in grams" 
+              placeholder="Enter quantity in grams"
               required
             />
             <Field
@@ -155,15 +161,16 @@ const AssetForm = () => {
               type="date"
               label="Purchase Date"
               component={CustomInput}
-
+              required
             />
-            {/* <Field
+            <Field
               name="pricePerGram"
               type="number"
               label="Purchase Price (per gram)"
               component={CustomInput}
               placeholder="Enter price per gram"
-            /> */}
+              required
+            />
           </div>
         );
 
@@ -204,6 +211,7 @@ const AssetForm = () => {
               label="Purchase Price (per share)"
               component={CustomInput}
               placeholder="Enter price per share"
+              required
             />
           </div>
         );
@@ -220,22 +228,25 @@ const AssetForm = () => {
                 { value: 'ETH', label: 'Ethereum (ETH)' },
                 { value: 'USDT', label: 'Tether (USDT)' },
                 { value: 'BNB', label: 'Binance Coin (BNB)' }
-              ]} required
+              ]}
+              required
             />
             <Field
-              name="cryptoQuantity"
+              name="quantity"
               type="number"
               label="Quantity"
               component={CustomInput}
               placeholder="Enter quantity"
-              step="0.000001"required
+              step="0.000001"
+              required
             />
             <Field
-              name="cryptoPrice"
+              name="purchasePrice"
               type="number"
               label="Purchase Price"
               component={CustomInput}
-              placeholder="Enter purchase price" 
+              placeholder="Enter purchase price"
+              required
             />
           </div>
         );
@@ -251,21 +262,24 @@ const AssetForm = () => {
                 { value: 'residential', label: 'Residential' },
                 { value: 'commercial', label: 'Commercial' },
                 { value: 'land', label: 'Land' }
-              ]} required
+              ]}
+              required
             />
             <Field
               name="area"
               type="number"
               label="Area (sq. ft)"
               component={CustomInput}
-              placeholder="Enter area in square feet" required
+              placeholder="Enter area in square feet"
+              required
             />
             <Field
               name="purchasePrice"
               type="number"
               label="Purchase Price"
               component={CustomInput}
-              placeholder="Enter purchase price" required
+              placeholder="Enter purchase price"
+              required
             />
           </div>
         );
@@ -279,6 +293,7 @@ const AssetForm = () => {
               label="Principal Amount"
               component={CustomInput}
               placeholder="Enter principal amount"
+              required
             />
             <Field
               name="interestRate"
@@ -286,6 +301,7 @@ const AssetForm = () => {
               label="Interest Rate (%)"
               component={CustomInput}
               placeholder="Enter interest rate"
+              required
               step="0.01"
             />
             <Field
@@ -294,6 +310,15 @@ const AssetForm = () => {
               label="Maturity Period (Years)"
               component={CustomInput}
               placeholder="Enter maturity period"
+              required
+            />
+            <Field
+              name="purchasePrice"
+              type="number"
+              label="Purchase Price"
+              component={CustomInput}
+              placeholder="Enter purchase price"
+              required
             />
           </div>
         );
